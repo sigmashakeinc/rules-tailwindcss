@@ -1,0 +1,24 @@
+# tailwindcss_write_safety.rules
+# Technology: tailwindcss | Capability: write
+
+rule tailwindcss-warn-dynamic-class {
+  enabled true
+  priority 80
+  severity warning
+  ASK write
+  IF path GLOB "**/*.tsx" AND content LINE_REGEX "className\\s*=\\s*\\{.*\\+.*\\}"
+  OR path GLOB "**/*.jsx" AND content LINE_REGEX "className\\s*=\\s*\\{.*\\+.*\\}"
+  OR path GLOB "**/*.tsx" AND content LINE_REGEX "className\\s*=\\s*\\{.*`.*\\$\\{.*\\}.*`\\}"
+  OR path GLOB "**/*.jsx" AND content LINE_REGEX "className\\s*=\\s*\\{.*`.*\\$\\{.*\\}.*`\\}"
+  MESSAGE "Dynamically constructing Tailwind classes using string concatenation or interpolation often breaks the purging process, leading to missing styles in production. Ensure complete class names exist in the source or use a safelist."
+  PROMPT "Are you constructing partial Tailwind class names dynamically? Tailwind cannot purge them correctly unless the full class name string is statically analyzable."
+}
+
+rule tailwindcss-warn-unsafe-safelist {
+  enabled true
+  priority 90
+  severity error
+  DENY write
+  IF path GLOB "**/tailwind.config.*" AND content LINE_REGEX "safelist\\s*:\\s*\\[\\s*['\"]\\.\\*['\"]\\s*\\]"
+  MESSAGE "Using a wildcard ('.*') in Tailwind's safelist disables CSS purging entirely, resulting in a massive CSS file and severe performance degradation. Use precise regular expressions or specific class names."
+}
